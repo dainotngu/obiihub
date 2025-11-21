@@ -143,7 +143,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitin
        repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv( ) . Key = "1e3fd8607009cfa687e46d83"
     getgenv().Setting = {
-        ["Team"] = "Pirate", --//If Marines Then Change Marines
+        ["Team"] = "Marines", --//If Marines Then Change Marines
         ["Method Click"] = {["Click Gun"] = false ,["Click Melee"] = false,["Click Sword"] = false,["Click Fruit"] = false, ["LowHealth"] = 5000, ["Delay Click"] = 0.6},
         ["Race V4"] = {["Enable"] = true},
         ["Webhook"] = {["Enabled"] = true,["Url Webhook"] = "https://discord.com/api/webhooks/1424658717651243029/R-uv4Y-tw5Kt-Zq06UL9pD3bURjjly6YlF7w-3VSqVIafw1GEhWriQ8bwK5Kyg8HREnJ"},
