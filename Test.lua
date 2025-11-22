@@ -1,8 +1,8 @@
--- Test_Config.lua
--- ObiiHub — Minimal + Auto Config Save
--- Author: (you)
 
--- ===== PREVENT MULTIPLE RUN =====
+-- ObiiHub — Horizontal UI + Auto Config
+-- Author: (qdai)
+
+-- ===== Prevent multiple runs =====
 if getgenv().ObiiHub_Running then return end
 getgenv().ObiiHub_Running = true
 
@@ -14,7 +14,7 @@ local PLAYER = Players.LocalPlayer
 
 -- ===== CONFIG =====
 local CORRECT_KEY = "day2hvnvlss"
-local UI_NAME = "ObiiHub_UI_v1"
+local UI_NAME = "ObiiHub_UI_Horizontal_Config"
 
 -- ===== KEY CHECK =====
 if not getgenv().Key or tostring(getgenv().Key) ~= CORRECT_KEY then
@@ -41,14 +41,11 @@ end
 local configFile = "ObiiHub_Config_"..PLAYER.UserId..".json"
 local Config = {}
 
--- load config if exists
 if isfile(configFile) then
     local success, data = pcall(readfile, configFile)
     if success then
         local ok, json = pcall(HttpService.JSONDecode, HttpService, data)
-        if ok then
-            Config = json
-        end
+        if ok then Config = json end
     end
 end
 
@@ -62,16 +59,15 @@ end
 local old = CoreGui:FindFirstChild(UI_NAME)
 if old then pcall(function() old:Destroy() end) end
 
--- ===== CREATE UI =====
-local screen = new("ScreenGui", {Name = UI_NAME, Parent = CoreGui, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+-- ===== CREATE UI BASE (HORIZONTAL) =====
+local screen = new("ScreenGui", {Name = UI_NAME, Parent = CoreGui, ResetOnSpawn = false})
 local main = new("Frame", {
     Parent = screen,
-    Size = UDim2.new(0, 340, 0, 400),
-    Position = UDim2.new(0.5, -170, 0.5, -200),
+    Size = UDim2.new(0, 600, 0, 180),
+    Position = UDim2.new(0.5, -300, 0.5, -90),
     BackgroundColor3 = Color3.fromRGB(255,170,190),
     Active = true,
     Draggable = true,
-    ZIndex = 2,
 })
 new("UICorner", {Parent = main, CornerRadius = UDim.new(0,12)})
 
@@ -80,19 +76,31 @@ new("TextLabel", {
     Parent = main,
     Size = UDim2.new(1,0,0,36),
     BackgroundTransparency = 1,
-    Text = "✨ ObiiHub Rose UI ✨",
+    Text = "✨ ObiiHub Horizontal UI ✨",
     TextColor3 = Color3.new(1,1,1),
-    Font = Enum.Font.GothamBold,
+    Font = Enum.Font.GothamSemibold,
     TextScaled = true,
 })
 
--- Info Box
+-- Close button
+local btnClose = new("TextButton", {
+    Parent = main,
+    Size = UDim2.new(0, 40, 0, 36),
+    Position = UDim2.new(1, -46, 0, 2),
+    BackgroundColor3 = Color3.fromRGB(255,140,160),
+    Text = "X",
+    TextColor3 = Color3.new(1,1,1),
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+})
+new("UICorner", {Parent = btnClose})
+
+-- Info Box (left side)
 local info = new("Frame", {
     Parent = main,
-    Size = UDim2.new(1, -20, 0, 120),
+    Size = UDim2.new(0.45, 0, 1, -40),
     Position = UDim2.new(0,10,0,44),
     BackgroundColor3 = Color3.fromRGB(255,150,175),
-    ZIndex = 2,
 })
 new("UICorner", {Parent = info, CornerRadius = UDim.new(0,10)})
 
@@ -102,45 +110,40 @@ new("TextLabel", {
     BackgroundTransparency = 1,
     Text = "📌 Thông tin:\n• FB: Obii Roblox\n• TikTok: @obii_hub\n• Tele: Obii Community",
     TextColor3 = Color3.new(1,1,1),
-    Font = Enum.Font.Gotham,
+    Font = Enum.Font.GothamSemibold,
     TextScaled = true,
     TextWrapped = true,
     TextXAlignment = Enum.TextXAlignment.Left,
     TextYAlignment = Enum.TextYAlignment.Top,
 })
 
--- ===== BUTTON FACTORY =====
-local function createButton(parent, text, y, key)
+-- ===== BUTTON FACTORY (right side) =====
+local function createToggleButton(parent, text, y, key)
     local b = new("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -20, 0, 36),
-        Position = UDim2.new(0, 10, 0, y),
+        Size = UDim2.new(0.5, -20, 0, 36),
+        Position = UDim2.new(0.5, 10, 0, y),
         BackgroundColor3 = Color3.fromRGB(255,130,150),
-        Text = text,
+        Text = text.." ("..tostring(Config[key] or false)..")",
         TextColor3 = Color3.new(1,1,1),
         Font = Enum.Font.GothamBold,
         TextSize = 17,
-        ZIndex = 2,
     })
     new("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)})
 
-    -- toggle button example: save state in config
-    if key then
-        b.Text = text.." ("..tostring(Config[key] or false)..")"
-        b.MouseButton1Click:Connect(function()
-            Config[key] = not Config[key]
-            b.Text = text.." ("..tostring(Config[key])..")"
-            saveConfig()
-        end)
-    end
+    b.MouseButton1Click:Connect(function()
+        Config[key] = not Config[key]
+        b.Text = text.." ("..tostring(Config[key])..")"
+        saveConfig()
+    end)
     return b
 end
 
-local b1 = createButton(main, "Option 1", 180, "Option1")
-local b2 = createButton(main, "Option 2", 226, "Option2")
-local b3 = createButton(main, "Option 3", 272, "Option3")
-local b4 = createButton(main, "Option 4", 318, "Option4")
-local b5 = createButton(main, "Option 5", 364, "Option5")
+local playerUID = tostring(PLAYER.UserId or "0")
+local b1 = createToggleButton(main, "Function 1", 50, "Function1")
+local b2 = createToggleButton(main, "Function 2", 92, "Function2")
+local b3 = createToggleButton(main, "Function 3", 134, "Function3")
+local b4 = createToggleButton(main, "Function 4", 176, "Function4")
 
 -- ===== FPS COUNTER =====
 local fpsLabel = new("TextLabel", {
@@ -153,7 +156,6 @@ local fpsLabel = new("TextLabel", {
     TextColor3 = Color3.new(1,1,1),
     Font = Enum.Font.GothamBold,
     TextSize = 14,
-    ZIndex = 3,
 })
 new("UICorner", {Parent = fpsLabel, CornerRadius = UDim.new(0,8)})
 
@@ -169,31 +171,7 @@ do
     end)
 end
 
--- ===== WHITE SCREEN =====
-local whiteOverlay = new("Frame", {
-    Parent = screen,
-    Size = UDim2.new(1,0,1,0),
-    Position = UDim2.new(0,0,0,0),
-    BackgroundColor3 = Color3.new(1,1,1),
-    Visible = Config["WhiteScreen"] or false,
-    ZIndex = 999,
-})
-local wsBtn = createButton(main, "Màn Trắng (ON/OFF)", 410, "WhiteScreen")
-b5.Position = UDim2.new(0,10,0,456)
-
--- ===== CLOSE BUTTON & CONFIRM =====
-local btnClose = new("TextButton", {
-    Parent = main,
-    Size = UDim2.new(0, 40, 0, 36),
-    Position = UDim2.new(1, -46, 0, 2),
-    BackgroundColor3 = Color3.fromRGB(255,140,160),
-    Text = "X",
-    TextColor3 = Color3.new(1,1,1),
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-})
-new("UICorner", {Parent = btnClose})
-
+-- ===== CLOSE CONFIRM =====
 local confirm = new("Frame", {
     Parent = screen,
     Size = UDim2.new(0, 260, 0, 140),
@@ -250,4 +228,4 @@ end
 PLAYER.OnTeleport:Connect(cleanup)
 PLAYER.AncestryChanged:Connect(function() if not PLAYER.Parent then cleanup() end end)
 
-print("[ObiiHub] Test_Config.lua loaded successfully.")
+print("[ObiiHub] Test_Horizontal_Config.lua loaded successfully.")
