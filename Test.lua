@@ -1,38 +1,28 @@
--- Test.lua
--- ObiiHub — Minimal, Stable, Full features (Ready for GitHub)
+-- Test_Config.lua
+-- ObiiHub — Minimal + Auto Config Save
 -- Author: (you)
--- Notes: Set getgenv().Key before executing (or when using loadstring)
 
--- ======= Prevent multiple runs =======
-if getgenv().ObiiHub_Running then
-    return
-end
+-- ===== PREVENT MULTIPLE RUN =====
+if getgenv().ObiiHub_Running then return end
 getgenv().ObiiHub_Running = true
 
--- ======= CONFIG =======
-local CORRECT_KEY = "day2hvnvlss"       -- modify here if you want
-local UI_NAME = "ObiiHub_UI_v1"         -- name used in CoreGui
-local PLAYER = game:GetService("Players").LocalPlayer
-local RUN_SERVICE = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
+local PLAYER = Players.LocalPlayer
 
--- ======= KEY CHECK =======
--- must set: getgenv().Key = "..." before running loadstring
+-- ===== CONFIG =====
+local CORRECT_KEY = "day2hvnvlss"
+local UI_NAME = "ObiiHub_UI_v1"
+
+-- ===== KEY CHECK =====
 if not getgenv().Key or tostring(getgenv().Key) ~= CORRECT_KEY then
-    -- gentle fallback: try warn before kick (some games block Kick)
-    pcall(function()
-        PLAYER:Kick("❌ Sai key. Vui lòng nhập đúng key!")
-    end)
+    pcall(function() PLAYER:Kick("❌ Sai key. Vui lòng nhập đúng key!") end)
     return
 end
 
--- ======= SAFE REMOVE EXISTING UI =======
-local coregui = game:GetService("CoreGui")
-local old = coregui:FindFirstChild(UI_NAME)
-if old then
-    pcall(function() old:Destroy() end)
-end
-
--- ======= UTILS =======
+-- ===== UTILS =====
 local function new(class, props)
     local obj = Instance.new(class)
     if props then
@@ -47,31 +37,151 @@ local function new(class, props)
     return obj
 end
 
--- ======= CREATE UI BASE =======
-local screen = new("ScreenGui", {Name = UI_NAME, Parent = coregui, ResetOnSpawn = false})
+-- ===== CONFIG FILE =====
+local configFile = "ObiiHub_Config_"..PLAYER.UserId..".json"
+local Config = {}
+
+-- load config if exists
+if isfile(configFile) then
+    local success, data = pcall(readfile, configFile)
+    if success then
+        local ok, json = pcall(HttpService.JSONDecode, HttpService, data)
+        if ok then
+            Config = json
+        end
+    end
+end
+
+local function saveConfig()
+    pcall(function()
+        writefile(configFile, HttpService:JSONEncode(Config))
+    end)
+end
+
+-- ===== SAFE REMOVE OLD UI =====
+local old = CoreGui:FindFirstChild(UI_NAME)
+if old then pcall(function() old:Destroy() end) end
+
+-- ===== CREATE UI =====
+local screen = new("ScreenGui", {Name = UI_NAME, Parent = CoreGui, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
 local main = new("Frame", {
     Parent = screen,
-    Size = UDim2.new(0, 340, 0, 380),
-    Position = UDim2.new(0.5, -170, 0.5, -190),
+    Size = UDim2.new(0, 340, 0, 400),
+    Position = UDim2.new(0.5, -170, 0.5, -200),
     BackgroundColor3 = Color3.fromRGB(255,170,190),
     Active = true,
     Draggable = true,
+    ZIndex = 2,
 })
 new("UICorner", {Parent = main, CornerRadius = UDim.new(0,12)})
 
 -- Title
-local title = new("TextLabel", {
+new("TextLabel", {
     Parent = main,
     Size = UDim2.new(1,0,0,36),
     BackgroundTransparency = 1,
     Text = "✨ ObiiHub Rose UI ✨",
     TextColor3 = Color3.new(1,1,1),
     Font = Enum.Font.GothamBold,
-    TextSize = 20,
-    TextScaled = false,
+    TextScaled = true,
 })
 
--- Close button
+-- Info Box
+local info = new("Frame", {
+    Parent = main,
+    Size = UDim2.new(1, -20, 0, 120),
+    Position = UDim2.new(0,10,0,44),
+    BackgroundColor3 = Color3.fromRGB(255,150,175),
+    ZIndex = 2,
+})
+new("UICorner", {Parent = info, CornerRadius = UDim.new(0,10)})
+
+new("TextLabel", {
+    Parent = info,
+    Size = UDim2.new(1,0,1,0),
+    BackgroundTransparency = 1,
+    Text = "📌 Thông tin:\n• FB: Obii Roblox\n• TikTok: @obii_hub\n• Tele: Obii Community",
+    TextColor3 = Color3.new(1,1,1),
+    Font = Enum.Font.Gotham,
+    TextScaled = true,
+    TextWrapped = true,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Top,
+})
+
+-- ===== BUTTON FACTORY =====
+local function createButton(parent, text, y, key)
+    local b = new("TextButton", {
+        Parent = parent,
+        Size = UDim2.new(1, -20, 0, 36),
+        Position = UDim2.new(0, 10, 0, y),
+        BackgroundColor3 = Color3.fromRGB(255,130,150),
+        Text = text,
+        TextColor3 = Color3.new(1,1,1),
+        Font = Enum.Font.GothamBold,
+        TextSize = 17,
+        ZIndex = 2,
+    })
+    new("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)})
+
+    -- toggle button example: save state in config
+    if key then
+        b.Text = text.." ("..tostring(Config[key] or false)..")"
+        b.MouseButton1Click:Connect(function()
+            Config[key] = not Config[key]
+            b.Text = text.." ("..tostring(Config[key])..")"
+            saveConfig()
+        end)
+    end
+    return b
+end
+
+local b1 = createButton(main, "Option 1", 180, "Option1")
+local b2 = createButton(main, "Option 2", 226, "Option2")
+local b3 = createButton(main, "Option 3", 272, "Option3")
+local b4 = createButton(main, "Option 4", 318, "Option4")
+local b5 = createButton(main, "Option 5", 364, "Option5")
+
+-- ===== FPS COUNTER =====
+local fpsLabel = new("TextLabel", {
+    Parent = screen,
+    Size = UDim2.new(0,120,0,26),
+    Position = UDim2.new(0,8,0,8),
+    BackgroundColor3 = Color3.fromRGB(255,130,150),
+    BackgroundTransparency = 0.15,
+    Text = "FPS: ...",
+    TextColor3 = Color3.new(1,1,1),
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+    ZIndex = 3,
+})
+new("UICorner", {Parent = fpsLabel, CornerRadius = UDim.new(0,8)})
+
+do
+    local last = tick()
+    RunService.RenderStepped:Connect(function()
+        local now = tick()
+        local dt = now - last
+        last = now
+        if dt > 0 then
+            fpsLabel.Text = "FPS: "..tostring(math.floor(1/dt + 0.5))
+        end
+    end)
+end
+
+-- ===== WHITE SCREEN =====
+local whiteOverlay = new("Frame", {
+    Parent = screen,
+    Size = UDim2.new(1,0,1,0),
+    Position = UDim2.new(0,0,0,0),
+    BackgroundColor3 = Color3.new(1,1,1),
+    Visible = Config["WhiteScreen"] or false,
+    ZIndex = 999,
+})
+local wsBtn = createButton(main, "Màn Trắng (ON/OFF)", 410, "WhiteScreen")
+b5.Position = UDim2.new(0,10,0,456)
+
+-- ===== CLOSE BUTTON & CONFIRM =====
 local btnClose = new("TextButton", {
     Parent = main,
     Size = UDim2.new(0, 40, 0, 36),
@@ -84,123 +194,6 @@ local btnClose = new("TextButton", {
 })
 new("UICorner", {Parent = btnClose})
 
--- Info box (FB / TikTok / Tele)
-local info = new("Frame", {
-    Parent = main,
-    Size = UDim2.new(1, -20, 0, 88),
-    Position = UDim2.new(0,10,0,44),
-    BackgroundColor3 = Color3.fromRGB(255,150,175),
-})
-new("UICorner", {Parent = info, CornerRadius = UDim.new(0,10)})
-local infoText = new("TextLabel", {
-    Parent = info,
-    Size = UDim2.new(1,0,1,0),
-    BackgroundTransparency = 1,
-    Text = "📌 Thông tin:\n• FB: Obii Roblox\n• TikTok: @obii_hub\n• Tele: Obii Community",
-    TextColor3 = Color3.new(1,1,1),
-    Font = Enum.Font.Gotham,
-    TextSize = 15,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    Padding = Enum.Padding.None,
-})
-
--- ======= BUTTON FACTORY =======
-local function createButton(parent, text, y)
-    local b = new("TextButton", {
-        Parent = parent,
-        Size = UDim2.new(1, -20, 0, 36),
-        Position = UDim2.new(0, 10, 0, y),
-        BackgroundColor3 = Color3.fromRGB(255,130,150),
-        Text = text,
-        TextColor3 = Color3.new(1,1,1),
-        Font = Enum.Font.GothamBold,
-        TextSize = 17,
-    })
-    new("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)})
-    return b
-end
-
--- ======= FUNCTION BUTTONS (placeholders) =======
-local playerUID = tostring(PLAYER.UserId or "0")
-local b1 = createButton(main, "Function 1", 150)
-local b2 = createButton(main, "Function 2", 196)
-local b3 = createButton(main, "Function 3", 242)
-local b4 = createButton(main, "Function 4", 288)
-local b5 = createButton(main, "Function 5", 334)
-
--- Example: you can replace these with your actual logic
-b1.MouseButton1Click:Connect(function()
-    -- Example auto logic by PlayerUID
-    if playerUID == "123456" then
-        -- run custom logic A
-        print("[Obii] Function1 -> logic A for UID "..playerUID)
-    else
-        print("[Obii] Function1 pressed. UID:", playerUID)
-    end
-end)
-
-b2.MouseButton1Click:Connect(function()
-    print("[Obii] Function2 pressed")
-end)
-b3.MouseButton1Click:Connect(function()
-    print("[Obii] Function3 pressed")
-end)
-b4.MouseButton1Click:Connect(function()
-    print("[Obii] Function4 pressed")
-end)
-b5.MouseButton1Click:Connect(function()
-    print("[Obii] Function5 pressed")
-end)
-
--- ======= FPS COUNTER (safe) =======
-local fpsLabel = new("TextLabel", {
-    Parent = screen,
-    Size = UDim2.new(0,120,0,26),
-    Position = UDim2.new(0,8,0,8),
-    BackgroundColor3 = Color3.fromRGB(255,130,150),
-    BackgroundTransparency = 0.15,
-    Text = "FPS: ...",
-    TextColor3 = Color3.new(1,1,1),
-    Font = Enum.Font.GothamBold,
-    TextSize = 14,
-})
-new("UICorner", {Parent = fpsLabel, CornerRadius = UDim.new(0,8)})
-
-do
-    -- Use RenderStepped for best precision but calculate delta safely
-    local last = tick()
-    RUN_SERVICE.RenderStepped:Connect(function()
-        local now = tick()
-        local dt = now - last
-        last = now
-        if dt > 0 then
-            local f = math.floor(1 / dt + 0.5)
-            fpsLabel.Text = "FPS: "..tostring(f)
-        end
-    end)
-end
-
--- ======= WHITE SCREEN (overlay) =======
-local whiteOverlay = new("Frame", {
-    Parent = screen,
-    Size = UDim2.new(1,0,1,0),
-    Position = UDim2.new(0,0,0,0),
-    BackgroundColor3 = Color3.new(1,1,1),
-    Visible = false,
-    ZIndex = 999,
-})
-
--- add a toggle button (placed as last function button for convenience)
-local wsBtn = createButton(main, "Màn Trắng (ON/OFF)", 334)
--- move the old b5 down so we don't overlap (we created two at same pos: keep both)
-b5.Position = UDim2.new(0,10,0, 378)
-wsBtn.MouseButton1Click:Connect(function()
-    whiteOverlay.Visible = not whiteOverlay.Visible
-end)
-
--- ======= CLOSE CONFIRM UI =======
 local confirm = new("Frame", {
     Parent = screen,
     Size = UDim2.new(0, 260, 0, 140),
@@ -245,31 +238,16 @@ local no = new("TextButton", {
 })
 new("UICorner", {Parent = no, CornerRadius = UDim.new(0,8)})
 
-btnClose.MouseButton1Click:Connect(function()
-    confirm.Visible = true
-end)
-yes.MouseButton1Click:Connect(function()
-    pcall(function() screen:Destroy() end)
-end)
-no.MouseButton1Click:Connect(function()
-    confirm.Visible = false
-end)
+btnClose.MouseButton1Click:Connect(function() confirm.Visible = true end)
+yes.MouseButton1Click:Connect(function() pcall(function() screen:Destroy() end) end)
+no.MouseButton1Click:Connect(function() confirm.Visible = false end)
 
--- ======= SAFE CLEANUP ON GAME CLOSE =======
--- (if the player leaves or UI should be removed)
+-- ===== CLEANUP =====
 local function cleanup()
-    if screen and screen.Parent then
-        pcall(function() screen:Destroy() end)
-    end
+    if screen and screen.Parent then pcall(function() screen:Destroy() end) end
     getgenv().ObiiHub_Running = false
 end
 PLAYER.OnTeleport:Connect(cleanup)
-GAME = game
-GAME:GetService("Players").LocalPlayer.AncestryChanged:Connect(function()
-    if not GAME:GetService("Players").LocalPlayer then
-        cleanup()
-    end
-end)
+PLAYER.AncestryChanged:Connect(function() if not PLAYER.Parent then cleanup() end end)
 
--- ======= END OF FILE =======
-print("[ObiiHub] Test.lua loaded successfully.")
+print("[ObiiHub] Test_Config.lua loaded successfully.")
