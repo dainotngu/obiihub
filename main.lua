@@ -1,8 +1,6 @@
--- ObiiHub_ProHorizontal_Full.lua
--- Horizontal Professional UI with Functions, Auto Config & FPS
+-- ObiiHub_ProHorizontal_Full.lua (Pro UI + FadeIn + Hover Shadow)
 -- Author: (you)
 
--- Prevent multiple runs
 if getgenv().ObiiHub_Running then return end
 getgenv().ObiiHub_Running = true
 
@@ -16,22 +14,16 @@ local PLAYER = Players.LocalPlayer
 local CORRECT_KEY = "day2hvnvlss"
 local UI_NAME = "ObiiHub_ProUI"
 
--- KEY CHECK
 if not getgenv().Key or tostring(getgenv().Key) ~= CORRECT_KEY then
     pcall(function() PLAYER:Kick("❌ Sai key. Vui lòng nhập đúng key!") end)
     return
 end
 
--- UTILS
 local function new(class, props)
     local obj = Instance.new(class)
     if props then
         for k,v in pairs(props) do
-            if k == "Parent" then
-                obj.Parent = v
-            else
-                obj[k] = v
-            end
+            if k=="Parent" then obj.Parent=v else obj[k]=v end
         end
     end
     return obj
@@ -40,7 +32,6 @@ end
 -- CONFIG FILE
 local configFile = "ObiiHub_Config_"..PLAYER.UserId..".json"
 local Config = {}
-
 if isfile(configFile) then
     local success, data = pcall(readfile, configFile)
     if success then
@@ -48,28 +39,34 @@ if isfile(configFile) then
         if ok then Config = json end
     end
 end
-
 local function saveConfig()
-    pcall(function()
-        writefile(configFile, HttpService:JSONEncode(Config))
-    end)
+    pcall(function() writefile(configFile, HttpService:JSONEncode(Config)) end)
 end
 
 -- SAFE REMOVE OLD UI
 local old = CoreGui:FindFirstChild(UI_NAME)
 if old then pcall(function() old:Destroy() end) end
 
--- SCREEN & MAIN
-local screen = new("ScreenGui", {Name = UI_NAME, Parent = CoreGui, ResetOnSpawn = false})
+-- MAIN SCREEN
+local screen = new("ScreenGui", {Name=UI_NAME, Parent=CoreGui, ResetOnSpawn=false})
 local main = new("Frame", {
     Parent = screen,
-    Size = UDim2.new(0, 620, 0, 200),
-    Position = UDim2.new(0.5, -310, 0.5, -100),
+    Size = UDim2.new(0, 800, 0, 300),
+    Position = UDim2.new(0.5, -400, 0.5, -150),
     BackgroundColor3 = Color3.fromRGB(255,180,200),
     Active = true,
     Draggable = true,
+    BackgroundTransparency = 1, -- start transparent for fade-in
 })
-new("UICorner", {Parent = main, CornerRadius = UDim.new(0,12)})
+new("UICorner",{Parent=main, CornerRadius=UDim.new(0,12)})
+
+-- FADE IN MAIN UI
+spawn(function()
+    for i=1,10 do
+        main.BackgroundTransparency = 1 - i*0.1
+        wait(0.03)
+    end
+end)
 
 -- TITLE
 local title = new("TextLabel", {
@@ -93,57 +90,79 @@ local btnClose = new("TextButton", {
     Font = Enum.Font.GothamBold,
     TextSize = 18,
 })
-new("UICorner", {Parent = btnClose})
+new("UICorner",{Parent=btnClose})
 
-btnClose.MouseEnter:Connect(function() btnClose.BackgroundColor3 = Color3.fromRGB(255,100,120) end)
-btnClose.MouseLeave:Connect(function() btnClose.BackgroundColor3 = Color3.fromRGB(255,130,150) end)
-btnClose.MouseButton1Click:Connect(function()
+btnClose.MouseEnter:Connect(function()
+    btnClose.BackgroundColor3=Color3.fromRGB(255,100,120)
+    -- hover shadow
+    if not btnClose:FindFirstChild("Shadow") then
+        local shadow = new("UIStroke",{Parent=btnClose, Color=Color3.fromRGB(255,255,255), Thickness=2})
+        shadow.Name="Shadow"
+    end
+end)
+btnClose.MouseLeave:Connect(function()
+    btnClose.BackgroundColor3=Color3.fromRGB(255,130,150)
+    local shadow = btnClose:FindFirstChild("Shadow")
+    if shadow then shadow:Destroy() end
+end)
+
+-- CONFIRM CLOSE FUNCTION
+local function closeUI()
     local confirm = new("Frame", {
         Parent = screen,
-        Size = UDim2.new(0, 280, 0, 120),
-        Position = UDim2.new(0.5, -140, 0.5, -60),
+        Size = UDim2.new(0, 300, 0, 120),
+        Position = UDim2.new(0.5, -150, 0.5, -60),
         BackgroundColor3 = Color3.fromRGB(255,170,190),
         ZIndex = 1000,
     })
-    new("UICorner", {Parent = confirm, CornerRadius=UDim.new(0,12)})
+    new("UICorner",{Parent=confirm, CornerRadius=UDim.new(0,12)})
+
     local label = new("TextLabel",{
         Parent = confirm,
         Size = UDim2.new(1,0,0,50),
-        BackgroundTransparency=1,
+        BackgroundTransparency = 1,
         Text="Bạn có chắc muốn tắt UI?",
         TextColor3=Color3.new(1,1,1),
         Font=Enum.Font.GothamBold,
-        TextSize=18
+        TextSize=18,
     })
+
     local yes = new("TextButton",{
         Parent = confirm,
         Size = UDim2.new(0.44,0,0,36),
         Position = UDim2.new(0.05,0,0.55,0),
-        BackgroundColor3=Color3.fromRGB(255,130,150),
+        BackgroundColor3 = Color3.fromRGB(255,130,150),
         Text="YES",
-        TextColor3=Color3.new(1,1,1),
-        Font=Enum.Font.GothamBold,
-        TextSize=16,
+        TextColor3 = Color3.new(1,1,1),
+        Font = Enum.Font.GothamBold,
+        TextSize = 16,
     })
     new("UICorner",{Parent=yes, CornerRadius=UDim.new(0,8)})
+
     local no = new("TextButton",{
         Parent = confirm,
         Size = UDim2.new(0.44,0,0,36),
         Position = UDim2.new(0.51,0,0.55,0),
-        BackgroundColor3=Color3.fromRGB(255,130,150),
+        BackgroundColor3 = Color3.fromRGB(255,130,150),
         Text="NO",
-        TextColor3=Color3.new(1,1,1),
-        Font=Enum.Font.GothamBold,
-        TextSize=16,
+        TextColor3 = Color3.new(1,1,1),
+        Font = Enum.Font.GothamBold,
+        TextSize = 16,
     })
     new("UICorner",{Parent=no, CornerRadius=UDim.new(0,8)})
 
     yes.MouseButton1Click:Connect(function()
+        for i = 1,10 do
+            main.BackgroundTransparency = main.BackgroundTransparency + 0.1
+            wait(0.03)
+        end
         pcall(function() screen:Destroy() end)
         getgenv().ObiiHub_Running=false
     end)
     no.MouseButton1Click:Connect(function() confirm:Destroy() end)
-end)
+end
+
+btnClose.MouseButton1Click:Connect(closeUI)
 
 -- INFO FRAME
 local infoFrame = new("Frame", {
@@ -190,8 +209,20 @@ local function createBtn(parent, text, y, key)
         TextSize=17,
     })
     new("UICorner",{Parent=b, CornerRadius=UDim.new(0,8)})
-    b.MouseEnter:Connect(function() b.BackgroundColor3=Color3.fromRGB(255,90,130) end)
-    b.MouseLeave:Connect(function() b.BackgroundColor3=Color3.fromRGB(255,120,150) end)
+
+    -- HOVER SHADOW EFFECT
+    local shadow
+    b.MouseEnter:Connect(function()
+        b.BackgroundColor3=Color3.fromRGB(255,90,130)
+        if not shadow then
+            shadow = new("UIStroke",{Parent=b, Color=Color3.fromRGB(255,255,255), Thickness=2})
+        end
+    end)
+    b.MouseLeave:Connect(function()
+        b.BackgroundColor3=Color3.fromRGB(255,120,150)
+        if shadow then shadow:Destroy() shadow=nil end
+    end)
+
     b.MouseButton1Click:Connect(function()
         Config[key] = not Config[key]
         b.Text = text.." ("..tostring(Config[key])..")"
@@ -241,4 +272,4 @@ end
 PLAYER.OnTeleport:Connect(cleanup)
 PLAYER.AncestryChanged:Connect(function() if not PLAYER.Parent then cleanup() end end)
 
-print("[ObiiHub] Pro Horizontal Full UI loaded successfully.")
+print("[ObiiHub] Pro Horizontal Full UI with FadeIn & Hover Shadow loaded.")
